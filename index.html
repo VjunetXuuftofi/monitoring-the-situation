@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026 Senate Predictions – Kalshi</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f1117;
+    color: #e0e0e0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  h1 {
+    margin: 24px 0 4px;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .subtitle {
+    color: #888;
+    font-size: 14px;
+    margin-bottom: 16px;
+  }
+  .main-layout {
+    display: flex;
+    gap: 24px;
+    width: 1300px;
+    max-width: 100vw;
+    padding: 0 16px;
+    align-items: flex-start;
+  }
+  .map-column {
+    flex: 1;
+    min-width: 0;
+  }
+  #map-container {
+    position: relative;
+    width: 100%;
+  }
+  .sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .panel {
+    background: #1a1a2e;
+    border: 1px solid #2a2a3a;
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .panel h2 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    letter-spacing: -0.3px;
+  }
+  .panel .control-bar {
+    display: flex;
+    height: 28px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 8px 0;
+  }
+  .panel .control-bar > div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+  }
+  .panel .control-bar .dem-bar { background: #3b82f6; }
+  .panel .control-bar .rep-bar { background: #ef4444; }
+  .panel .control-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+  }
+  .panel .control-labels .dem-label { color: #60a5fa; }
+  .panel .control-labels .rep-label { color: #f87171; }
+  .panel .balance-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 13px;
+    border-bottom: 1px solid #2a2a3a;
+  }
+  .panel .balance-row:last-child { border-bottom: none; }
+  .panel .balance-label { color: #ccc; }
+  .panel .balance-price { font-weight: 600; font-size: 14px; }
+  .panel a.kalshi-link {
+    display: block;
+    text-align: center;
+    color: #888;
+    font-size: 11px;
+    margin-top: 8px;
+    text-decoration: none;
+  }
+  .panel a.kalshi-link:hover { color: #bbb; text-decoration: underline; }
+  .panel a.featured-link:hover { background: #2a2a3a; border-radius: 4px; }
+  svg {
+    width: 100%;
+    height: auto;
+  }
+  .state {
+    stroke: #1a1a2e;
+    stroke-width: 1;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .state:hover {
+    opacity: 0.8;
+    stroke: #fff;
+    stroke-width: 2;
+  }
+  .state.no-race {
+    fill: #2a2a3a;
+    cursor: default;
+  }
+  .state.no-race:hover {
+    opacity: 1;
+    stroke: #1a1a2e;
+    stroke-width: 1;
+  }
+  .state.loading {
+    fill: #3a3a4a;
+  }
+  #tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: rgba(20, 20, 35, 0.96);
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    line-height: 1.5;
+    display: none;
+    z-index: 1000;
+    width: 280px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+  #tooltip .state-name {
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 4px;
+  }
+  #tooltip .incumbent {
+    color: #aaa;
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+  #tooltip .prob-bar {
+    display: flex;
+    height: 24px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 8px 0;
+  }
+  #tooltip .prob-bar .dem {
+    background: #3b82f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+  }
+  #tooltip .prob-bar .rep {
+    background: #ef4444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+  }
+  #tooltip .prob-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    gap: 12px;
+  }
+  #tooltip .prob-labels .dem-label { color: #60a5fa; }
+  #tooltip .prob-labels .rep-label { color: #f87171; }
+  #tooltip .prob-labels .ind-label { color: #fbbf24; }
+  #tooltip .prob-bar .ind {
+    background: #d97706;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+  }
+  #tooltip .prob-bar .dem + .ind,
+  #tooltip .prob-bar .ind + .rep {
+    border-left: 2px solid #1a1a2e;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 16px;
+    margin: 8px 0;
+    font-size: 13px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .legend-swatch {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+  }
+  #status {
+    color: #888;
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+  .error-note {
+    color: #f87171;
+    font-size: 12px;
+    margin-top: 8px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<h1>Monitoring The Situation</h1>
+<p class="subtitle">Live data from Kalshi prediction markets</p>
+
+<div class="main-layout">
+  <div class="map-column">
+    <h2 style="font-size:18px;margin-bottom:8px;color:#ccc">2026 Senate Races</h2>
+    <div id="map-container"></div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-swatch" style="background:#1e40af"></div> Safe D</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#3b82f6"></div> Likely D</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#93c5fd"></div> Lean D</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#a78bfa"></div> Toss-up</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#fca5a5"></div> Lean R</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#ef4444"></div> Likely R</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#991b1b"></div> Safe R</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#2a2a3a"></div> No race</div>
+    </div>
+  </div>
+  <div class="sidebar">
+    <div class="panel" id="senate-control">
+      <h2>Senate Control</h2>
+      <div class="control-bar"><div class="dem-bar" style="width:50%">50%</div><div class="rep-bar" style="width:50%">50%</div></div>
+      <div class="control-labels"><span class="dem-label">Loading...</span><span class="rep-label"></span></div>
+      <a class="kalshi-link" href="https://kalshi.com/markets/controls" target="_blank">View on Kalshi</a>
+    </div>
+    <div class="panel" id="house-control">
+      <h2>House Control</h2>
+      <div class="control-bar"><div class="dem-bar" style="width:50%">50%</div><div class="rep-bar" style="width:50%">50%</div></div>
+      <div class="control-labels"><span class="dem-label">Loading...</span><span class="rep-label"></span></div>
+      <a class="kalshi-link" href="https://kalshi.com/markets/controlh" target="_blank">View on Kalshi</a>
+    </div>
+    <div class="panel" id="balance-power">
+      <h2>Balance of Power</h2>
+      <div id="balance-rows">Loading...</div>
+      <a class="kalshi-link" href="https://kalshi.com/markets/kxbalancepowercombo" target="_blank">View on Kalshi</a>
+    </div>
+    <div class="panel" id="featured-races">
+      <h2>Featured Primaries</h2>
+      <div id="featured-rows">Loading...</div>
+    </div>
+  </div>
+</div>
+<div id="status">Loading market data...</div>
+<div id="tooltip"></div>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+<script>
+// States with 2026 senate races
+const SENATE_RACES_2026 = {
+  'AK': { name: 'Alaska', incumbent: 'Dan Sullivan', party: 'R' },
+  'AL': { name: 'Alabama', incumbent: 'Tommy Tuberville', party: 'R' },
+  'AR': { name: 'Arkansas', incumbent: 'Tom Cotton', party: 'R' },
+  'CO': { name: 'Colorado', incumbent: 'John Hickenlooper', party: 'D' },
+  'DE': { name: 'Delaware', incumbent: 'Chris Coons', party: 'D' },
+  'FL': { name: 'Florida', incumbent: 'Ashley Moody', party: 'R', note: 'Special' },
+  'GA': { name: 'Georgia', incumbent: 'Jon Ossoff', party: 'D' },
+  'IA': { name: 'Iowa', incumbent: 'Joni Ernst', party: 'R' },
+  'ID': { name: 'Idaho', incumbent: 'Jim Risch', party: 'R' },
+  'IL': { name: 'Illinois', incumbent: 'Dick Durbin', party: 'D' },
+  'KS': { name: 'Kansas', incumbent: 'Roger Marshall', party: 'R' },
+  'KY': { name: 'Kentucky', incumbent: 'Mitch McConnell', party: 'R' },
+  'LA': { name: 'Louisiana', incumbent: 'Bill Cassidy', party: 'R' },
+  'MA': { name: 'Massachusetts', incumbent: 'Ed Markey', party: 'D' },
+  'ME': { name: 'Maine', incumbent: 'Susan Collins', party: 'R' },
+  'MI': { name: 'Michigan', incumbent: 'Gary Peters', party: 'D' },
+  'MN': { name: 'Minnesota', incumbent: 'Tina Smith', party: 'D' },
+  'MS': { name: 'Mississippi', incumbent: 'Cindy Hyde-Smith', party: 'R' },
+  'MT': { name: 'Montana', incumbent: 'Steve Daines', party: 'R' },
+  'NC': { name: 'North Carolina', incumbent: 'Thom Tillis', party: 'R' },
+  'NE': { name: 'Nebraska', incumbent: 'Ben Sasse', party: 'R' },
+  'NH': { name: 'New Hampshire', incumbent: 'Jeanne Shaheen', party: 'D' },
+  'NJ': { name: 'New Jersey', incumbent: 'Cory Booker', party: 'D' },
+  'NM': { name: 'New Mexico', incumbent: 'Ben Ray Luján', party: 'D' },
+  'OH': { name: 'Ohio', incumbent: 'JD Vance seat', party: 'R', note: 'Special' },
+  'OK': { name: 'Oklahoma', incumbent: 'James Lankford', party: 'R' },
+  'OR': { name: 'Oregon', incumbent: 'Jeff Merkley', party: 'D' },
+  'RI': { name: 'Rhode Island', incumbent: 'Jack Reed', party: 'D' },
+  'SC': { name: 'South Carolina', incumbent: 'Lindsey Graham', party: 'R' },
+  'SD': { name: 'South Dakota', incumbent: 'Mike Rounds', party: 'R' },
+  'TN': { name: 'Tennessee', incumbent: 'Bill Hagerty', party: 'R' },
+  'TX': { name: 'Texas', incumbent: 'John Cornyn', party: 'R' },
+  'VA': { name: 'Virginia', incumbent: 'Mark Warner', party: 'D' },
+  'WV': { name: 'West Virginia', incumbent: 'Shelley Moore Capito', party: 'R' },
+  'WY': { name: 'Wyoming', incumbent: 'John Barrasso', party: 'R' },
+};
+
+// FIPS code to state abbreviation
+const FIPS_TO_STATE = {
+  '01':'AL','02':'AK','04':'AZ','05':'AR','06':'CA','08':'CO','09':'CT',
+  '10':'DE','11':'DC','12':'FL','13':'GA','15':'HI','16':'ID','17':'IL',
+  '18':'IN','19':'IA','20':'KS','21':'KY','22':'LA','23':'ME','24':'MD',
+  '25':'MA','26':'MI','27':'MN','28':'MS','29':'MO','30':'MT','31':'NE',
+  '32':'NV','33':'NH','34':'NJ','35':'NM','36':'NY','37':'NC','38':'ND',
+  '39':'OH','40':'OK','41':'OR','42':'PA','44':'RI','45':'SC','46':'SD',
+  '47':'TN','48':'TX','49':'UT','50':'VT','51':'VA','53':'WA','54':'WV',
+  '55':'WI','56':'WY'
+};
+
+const STATE_NAMES = {
+  'AL':'Alabama','AK':'Alaska','AZ':'Arizona','AR':'Arkansas','CA':'California',
+  'CO':'Colorado','CT':'Connecticut','DE':'Delaware','DC':'District of Columbia',
+  'FL':'Florida','GA':'Georgia','HI':'Hawaii','ID':'Idaho','IL':'Illinois',
+  'IN':'Indiana','IA':'Iowa','KS':'Kansas','KY':'Kentucky','LA':'Louisiana',
+  'ME':'Maine','MD':'Maryland','MA':'Massachusetts','MI':'Michigan','MN':'Minnesota',
+  'MS':'Mississippi','MO':'Missouri','MT':'Montana','NE':'Nebraska','NV':'Nevada',
+  'NH':'New Hampshire','NJ':'New Jersey','NM':'New Mexico','NY':'New York',
+  'NC':'North Carolina','ND':'North Dakota','OH':'Ohio','OK':'Oklahoma','OR':'Oregon',
+  'PA':'Pennsylvania','RI':'Rhode Island','SC':'South Carolina','SD':'South Dakota',
+  'TN':'Tennessee','TX':'Texas','UT':'Utah','VT':'Vermont','VA':'Virginia',
+  'WA':'Washington','WV':'West Virginia','WI':'Wisconsin','WY':'Wyoming'
+};
+
+// Store market data
+const marketData = {};
+
+function getColor(data) {
+  if (!data || data.demPrice === null) return '#3a3a4a';
+  const dem = data.demPrice;
+  const rep = data.repPrice;
+  const others = data.others || [];
+  const topInd = others.length ? Math.max(...others.map(o => o.price)) : 0;
+  // If an independent leads or is competitive, show gold
+  if (topInd >= dem && topInd >= rep) return '#d97706';
+  if (topInd >= 30 && topInd >= rep * 0.6) return '#d97706';
+  // Use the leader's actual probability
+  if (rep >= 90) return '#991b1b';
+  if (rep >= 70) return '#ef4444';
+  if (rep >= 58) return '#fca5a5';
+  if (dem >= 90) return '#1e40af';
+  if (dem >= 70) return '#3b82f6';
+  if (dem >= 58) return '#93c5fd';
+  return '#a78bfa';
+}
+
+function getRating(data) {
+  if (!data || data.demPrice === null) return 'Loading...';
+  const dem = data.demPrice;
+  const rep = data.repPrice;
+  const others = data.others || [];
+  const topInd = others.length ? Math.max(...others.map(o => o.price)) : 0;
+  // Find the leader
+  if (topInd >= dem && topInd >= rep) {
+    const name = others.find(o => o.price === topInd).name;
+    if (topInd >= 90) return `Safe ${name}`;
+    if (topInd >= 70) return `Likely ${name}`;
+    if (topInd >= 58) return `Lean ${name}`;
+    return 'Toss-up';
+  }
+  if (rep >= 90) return 'Safe R';
+  if (rep >= 70) return 'Likely R';
+  if (rep >= 58) return 'Lean R';
+  if (dem >= 90) return 'Safe D';
+  if (dem >= 70) return 'Likely D';
+  if (dem >= 58) return 'Lean D';
+  if (Math.max(dem, rep) < 58) return 'Toss-up';
+  return 'Toss-up';
+}
+
+async function loadAllData() {
+  const statusEl = document.getElementById('status');
+  try {
+    const resp = await fetch('/api/senate');
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+
+    let loaded = 0;
+    for (const [state, result] of Object.entries(data)) {
+      marketData[state] = result;
+      const el = document.querySelector(`[data-state="${state}"]`);
+      if (el && result.demPrice !== null) {
+        el.style.fill = getColor(result);
+        el.classList.remove('loading');
+        loaded++;
+      } else if (el) {
+        el.style.fill = '#4a4a5a';
+        el.classList.remove('loading');
+      }
+    }
+    statusEl.textContent = `Loaded ${loaded} races. Updated: ${new Date().toLocaleTimeString()}`;
+  } catch (e) {
+    statusEl.textContent = `Failed to load data: ${e.message}`;
+  }
+}
+
+async function loadControlData() {
+  try {
+    const resp = await fetch('/api/control');
+    if (!resp.ok) return;
+    const data = await resp.json();
+
+    // Senate control
+    const senate = data.senate?.markets || {};
+    const senD = Math.round(senate.D?.price || 0);
+    const senR = Math.round(senate.R?.price || 0);
+    const senPanel = document.getElementById('senate-control');
+    senPanel.querySelector('.control-bar').innerHTML =
+      `<div class="dem-bar" style="width:${senD}%">${senD}%</div>` +
+      `<div class="rep-bar" style="width:${senR}%">${senR}%</div>`;
+    senPanel.querySelector('.control-labels').innerHTML =
+      `<span class="dem-label">D: ${senD}%</span><span class="rep-label">R: ${senR}%</span>`;
+
+    // House control
+    const house = data.house?.markets || {};
+    const houD = Math.round(house.D?.price || 0);
+    const houR = Math.round(house.R?.price || 0);
+    const houPanel = document.getElementById('house-control');
+    houPanel.querySelector('.control-bar').innerHTML =
+      `<div class="dem-bar" style="width:${houD}%">${houD}%</div>` +
+      `<div class="rep-bar" style="width:${houR}%">${houR}%</div>`;
+    houPanel.querySelector('.control-labels').innerHTML =
+      `<span class="dem-label">D: ${houD}%</span><span class="rep-label">R: ${houR}%</span>`;
+
+    // Balance of power
+    const bal = data.balance?.markets || {};
+    const scenarios = [
+      { key: 'DD', label: 'D House + D Senate', color: '#3b82f6' },
+      { key: 'DR', label: 'D House + R Senate', color: '#a78bfa' },
+      { key: 'RD', label: 'R House + D Senate', color: '#a78bfa' },
+      { key: 'RR', label: 'R House + R Senate', color: '#ef4444' },
+    ];
+    const rowsEl = document.getElementById('balance-rows');
+    rowsEl.innerHTML = scenarios.map(s => {
+      const price = Math.round(bal[s.key]?.price || 0);
+      return `<div class="balance-row">
+        <span class="balance-label">${s.label}</span>
+        <span class="balance-price" style="color:${s.color}">${price}%</span>
+      </div>`;
+    }).join('');
+
+    // Featured primary races
+    const featured = data.featured || [];
+    const featuredEl = document.getElementById('featured-rows');
+    featuredEl.innerHTML = featured.map(f => {
+      const price = f.price !== null ? Math.round(f.price) : '—';
+      const color = f.price >= 70 ? '#4ade80' : f.price >= 40 ? '#fbbf24' : '#f87171';
+      const url = `https://kalshi.com/markets/${f.series}`;
+      return `<a class="balance-row featured-link" href="${url}" target="_blank" style="text-decoration:none;color:inherit">
+        <span class="balance-label">${f.label}</span>
+        <span class="balance-price" style="color:${color}">${price}%</span>
+      </a>`;
+    }).join('');
+  } catch (e) {
+    console.error('Failed to load control data:', e);
+  }
+}
+
+async function renderMap() {
+  const width = 960;
+  const height = 600;
+
+  const svg = d3.select('#map-container')
+    .append('svg')
+    .attr('viewBox', `0 0 ${width} ${height}`)
+    .attr('preserveAspectRatio', 'xMidYMid meet');
+
+  const projection = d3.geoAlbersUsa().scale(1280).translate([width/2, height/2]);
+  const path = d3.geoPath().projection(projection);
+
+  const tooltip = document.getElementById('tooltip');
+
+  // Load US topology
+  const us = await d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json');
+  const states = topojson.feature(us, us.objects.states).features;
+
+  svg.selectAll('.state')
+    .data(states)
+    .enter()
+    .append('path')
+    .attr('class', d => {
+      const abbr = FIPS_TO_STATE[d.id];
+      if (SENATE_RACES_2026[abbr]) return 'state loading';
+      return 'state no-race';
+    })
+    .attr('d', path)
+    .attr('data-state', d => FIPS_TO_STATE[d.id])
+    .on('mousemove', function(event, d) {
+      const abbr = FIPS_TO_STATE[d.id];
+      const race = SENATE_RACES_2026[abbr];
+      const data = marketData[abbr];
+      const stateName = STATE_NAMES[abbr] || abbr;
+
+      let html = `<div class="state-name">${stateName}</div>`;
+
+      if (!race) {
+        html += `<div style="color:#888">No Senate race in 2026</div>`;
+      } else if (!data || data.demPrice === null) {
+        html += `<div class="incumbent">${race.incumbent} (${race.party})${race.note ? ' — ' + race.note : ''}</div>`;
+        html += `<div style="color:#888">Loading or unavailable...</div>`;
+      } else {
+        const dem = Math.round(data.demPrice);
+        const rep = Math.round(data.repPrice);
+        const others = data.others || [];
+        html += `<div class="incumbent">${race.incumbent} (${race.party})${race.note ? ' — ' + race.note : ''}</div>`;
+        html += `<div style="font-weight:600;margin:4px 0">${getRating(data)}</div>`;
+        // Build bar segments
+        let barHtml = `<div class="dem" style="width:${dem}%"></div>`;
+        for (const o of others) {
+          const p = Math.round(o.price);
+          barHtml += `<div class="ind" style="width:${p}%"></div>`;
+        }
+        barHtml += `<div class="rep" style="width:${rep}%"></div>`;
+        html += `<div class="prob-bar">${barHtml}</div>`;
+        // Labels
+        html += `<div class="prob-labels">
+          <span class="dem-label">D: ${dem}¢</span>`;
+        for (const o of others) {
+          html += `<span class="ind-label">${o.name}: ${Math.round(o.price)}¢</span>`;
+        }
+        html += `<span class="rep-label">R: ${rep}¢</span>
+        </div>`;
+      }
+
+      tooltip.innerHTML = html;
+      tooltip.style.display = 'block';
+
+      let x = event.clientX + 16;
+      let y = event.clientY + 16;
+      // Keep tooltip on screen
+      const rect = tooltip.getBoundingClientRect();
+      if (x + 300 > window.innerWidth) x = event.clientX - 316;
+      if (y + 200 > window.innerHeight) y = event.clientY - 200;
+
+      tooltip.style.left = x + 'px';
+      tooltip.style.top = y + 'px';
+    })
+    .on('mouseleave', function() {
+      tooltip.style.display = 'none';
+    })
+    .on('click', function(event, d) {
+      const abbr = FIPS_TO_STATE[d.id];
+      const data = marketData[abbr];
+      if (!data || !data.eventTicker) return;
+      // Build Kalshi URL: e.g. SENATEGA-26 -> kalshi.com/markets/senatega/.../senatega-26
+      const evt = data.eventTicker.toLowerCase();
+      // Series is event ticker without the trailing -26 (or -26nov etc)
+      const series = evt.replace(/-26.*$/, '');
+      window.open(`https://kalshi.com/markets/${series}`, '_blank');
+    });
+
+  // State borders
+  svg.append('path')
+    .datum(topojson.mesh(us, us.objects.states, (a, b) => a !== b))
+    .attr('fill', 'none')
+    .attr('stroke', '#1a1a2e')
+    .attr('stroke-width', 1)
+    .attr('d', path);
+
+  // Load market data
+  loadAllData();
+  loadControlData();
+}
+
+renderMap();
+</script>
+</body>
+</html>
