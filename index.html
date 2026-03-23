@@ -424,14 +424,20 @@ async function loadAllData() {
   }
 }
 
-async function loadControlData() {
+async function loadControlData(retries = 3) {
   try {
     const resp = await fetch('/api/control');
     if (!resp.ok) return;
     const data = await resp.json();
 
-    // Senate control
+    // If senate control is empty, server may still be warming up — retry
     const senate = data.senate?.markets || {};
+    if (!senate.D && !senate.R && retries > 0) {
+      await new Promise(r => setTimeout(r, 3000));
+      return loadControlData(retries - 1);
+    }
+
+    // Senate control
     const senD = Math.round(senate.D?.price || 0);
     const senR = Math.round(senate.R?.price || 0);
     const senPanel = document.getElementById('senate-control');

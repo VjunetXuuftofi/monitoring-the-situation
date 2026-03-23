@@ -120,22 +120,26 @@ def fetch_control_data():
     results = {}
     for key, evt in CONTROL_EVENTS.items():
         url = f"{KALSHI_API}?event_ticker={evt}&limit=10"
-        try:
-            req = urllib.request.Request(url, headers={"Accept": "application/json"})
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                data = json.loads(resp.read())
-            markets = {}
-            for m in data.get("markets", []):
-                ticker = m["ticker"]
-                suffix = ticker.split("-")[-1]  # D, R, DD, RR, DR, RD
-                price = float(m.get("last_price_dollars") or "0") * 100
-                label = m.get("yes_sub_title") or suffix
-                markets[suffix] = {"price": price, "label": label, "ticker": ticker}
-            results[key] = {"markets": markets, "eventTicker": evt}
-        except Exception as e:
-            print(f"  Failed {key}: {e}")
-            results[key] = {"markets": {}, "eventTicker": evt}
-        time.sleep(0.3)
+        markets = {}
+        for attempt in range(3):
+            try:
+                req = urllib.request.Request(url, headers={"Accept": "application/json"})
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    data = json.loads(resp.read())
+                for m in data.get("markets", []):
+                    ticker = m["ticker"]
+                    suffix = ticker.split("-")[-1]  # D, R, DD, RR, DR, RD
+                    price = float(m.get("last_price_dollars") or "0") * 100
+                    label = m.get("yes_sub_title") or suffix
+                    markets[suffix] = {"price": price, "label": label, "ticker": ticker}
+                break
+            except Exception as e:
+                if attempt < 2:
+                    time.sleep(1 * (attempt + 1))
+                else:
+                    print(f"  Failed {key}: {e}")
+        results[key] = {"markets": markets, "eventTicker": evt}
+        time.sleep(0.5)
 
     # Featured primary races - fetch specific candidate tickers
     FEATURED_RACES = [
@@ -212,8 +216,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 if __name__ == "__main__":
     print(f"Starting server at http://localhost:{PORT}")
     print(f"Open http://localhost:{PORT} in your browser")
-    # Pre-fetch data at startup
+    # Pre-fetch data at startup with pause between to avoid rate limits
     fetch_all_senate_data()
+    time.sleep(2)
     fetch_control_data()
     server = http.server.HTTPServer(("", PORT), Handler)
     try:
