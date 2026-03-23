@@ -229,6 +229,60 @@
     font-size: 13px;
     margin-bottom: 20px;
   }
+  @media (max-width: 900px) {
+    h1 { font-size: 22px; margin: 16px 0 4px; }
+    .main-layout {
+      flex-direction: column;
+      width: 100%;
+      gap: 16px;
+    }
+    .sidebar {
+      width: 100%;
+      order: -1;
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+    .sidebar .panel {
+      flex: 1;
+      min-width: 250px;
+    }
+    .legend {
+      gap: 8px 12px;
+      font-size: 11px;
+    }
+    .legend-swatch {
+      width: 12px;
+      height: 12px;
+    }
+    #tooltip {
+      width: 240px;
+      padding: 10px 12px;
+      font-size: 13px;
+    }
+  }
+  @media (max-width: 500px) {
+    h1 { font-size: 18px; }
+    .subtitle { font-size: 12px; }
+    .sidebar {
+      flex-direction: column;
+    }
+    .sidebar .panel {
+      min-width: 0;
+    }
+    .legend {
+      font-size: 10px;
+      gap: 6px 10px;
+    }
+    .legend-swatch {
+      width: 10px;
+      height: 10px;
+    }
+    #tooltip {
+      width: 200px;
+      font-size: 12px;
+    }
+    .panel .balance-label { font-size: 12px; }
+  }
   .error-note {
     color: #f87171;
     font-size: 12px;
@@ -576,12 +630,58 @@ async function renderMap() {
     })
     .on('click', function(event, d) {
       const abbr = FIPS_TO_STATE[d.id];
+      const isMobile = 'ontouchstart' in window;
+      if (isMobile) {
+        // On mobile: first tap shows tooltip, second tap on same state opens link
+        if (tooltip.style.display === 'block' && tooltip.dataset.state === abbr) {
+          const data = marketData[abbr];
+          if (data?.eventTicker) {
+            const series = data.eventTicker.toLowerCase().replace(/-26.*$/, '');
+            window.open(`https://kalshi.com/markets/${series}`, '_blank');
+          }
+          return;
+        }
+        // Show tooltip centered below tap point
+        const race = SENATE_RACES_2026[abbr];
+        const mdata = marketData[abbr];
+        const stateName = STATE_NAMES[abbr] || abbr;
+        let html = `<div class="state-name">${stateName}</div>`;
+        if (!race) {
+          html += `<div style="color:#888">No Senate race in 2026</div>`;
+        } else if (!mdata || mdata.demPrice === null) {
+          html += `<div class="incumbent">${race.incumbent} (${race.party})${race.note ? ' — ' + race.note : ''}</div>`;
+          html += `<div style="color:#888">Loading or unavailable...</div>`;
+        } else {
+          const dem = Math.round(mdata.demPrice);
+          const rep = Math.round(mdata.repPrice);
+          const others = mdata.others || [];
+          html += `<div class="incumbent">${race.incumbent} (${race.party})${race.note ? ' — ' + race.note : ''}</div>`;
+          html += `<div style="font-weight:600;margin:4px 0">${getRating(mdata)}</div>`;
+          let barHtml = `<div class="dem" style="width:${dem}%"></div>`;
+          for (const o of others) { barHtml += `<div class="ind" style="width:${Math.round(o.price)}%"></div>`; }
+          barHtml += `<div class="rep" style="width:${rep}%"></div>`;
+          html += `<div class="prob-bar">${barHtml}</div>`;
+          html += `<div class="prob-labels"><span class="dem-label">D: ${dem}¢</span>`;
+          for (const o of others) { html += `<span class="ind-label">${o.name}: ${Math.round(o.price)}¢</span>`; }
+          html += `<span class="rep-label">R: ${rep}¢</span></div>`;
+          html += `<div style="color:#666;font-size:11px;margin-top:6px;text-align:center">Tap again to view on Kalshi</div>`;
+        }
+        tooltip.innerHTML = html;
+        tooltip.dataset.state = abbr;
+        tooltip.style.display = 'block';
+        const tw = 240;
+        let tx = event.clientX - tw / 2;
+        tx = Math.max(8, Math.min(tx, window.innerWidth - tw - 8));
+        tooltip.style.left = tx + 'px';
+        tooltip.style.top = (event.clientY + 20) + 'px';
+        event.stopPropagation();
+        return;
+      }
+      // Desktop: click opens Kalshi
       const data = marketData[abbr];
       if (!data || !data.eventTicker) return;
-      // Build Kalshi URL: e.g. SENATEGA-26 -> kalshi.com/markets/senatega/.../senatega-26
-      const evt = data.eventTicker.toLowerCase();
-      // Series is event ticker without the trailing -26 (or -26nov etc)
-      const series = evt.replace(/-26.*$/, '');
+      const evt2 = data.eventTicker.toLowerCase();
+      const series = evt2.replace(/-26.*$/, '');
       window.open(`https://kalshi.com/markets/${series}`, '_blank');
     });
 
@@ -599,6 +699,14 @@ async function renderMap() {
 }
 
 renderMap();
+
+// Dismiss tooltip on mobile when tapping outside map
+document.addEventListener('click', function(e) {
+  const tooltip = document.getElementById('tooltip');
+  if (tooltip.style.display === 'block' && !e.target.closest('.state')) {
+    tooltip.style.display = 'none';
+  }
+});
 </script>
 </body>
 </html>
