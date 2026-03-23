@@ -617,13 +617,14 @@ async function renderMap() {
 
       let x = event.clientX + 16;
       let y = event.clientY + 16;
-      // Keep tooltip on screen
-      const rect = tooltip.getBoundingClientRect();
-      if (x + 300 > window.innerWidth) x = event.clientX - 316;
-      if (y + 200 > window.innerHeight) y = event.clientY - 200;
-
       tooltip.style.left = x + 'px';
       tooltip.style.top = y + 'px';
+      // Adjust after render to keep on screen
+      requestAnimationFrame(() => {
+        const tr = tooltip.getBoundingClientRect();
+        if (tr.right > window.innerWidth - 8) tooltip.style.left = (event.clientX - tr.width - 8) + 'px';
+        if (tr.bottom > window.innerHeight - 8) tooltip.style.top = Math.max(8, event.clientY - tr.height - 8) + 'px';
+      });
     })
     .on('mouseleave', function() {
       tooltip.style.display = 'none';
@@ -673,7 +674,16 @@ async function renderMap() {
         let tx = event.clientX - tw / 2;
         tx = Math.max(8, Math.min(tx, window.innerWidth - tw - 8));
         tooltip.style.left = tx + 'px';
-        tooltip.style.top = (event.clientY + 20) + 'px';
+        // Place below tap, but flip above if not enough space
+        let ty = event.clientY + 20;
+        tooltip.style.top = ty + 'px';
+        // After rendering, check if it overflows and flip if needed
+        requestAnimationFrame(() => {
+          const tr = tooltip.getBoundingClientRect();
+          if (tr.bottom > window.innerHeight - 8) {
+            tooltip.style.top = Math.max(8, event.clientY - tr.height - 12) + 'px';
+          }
+        });
         event.stopPropagation();
         return;
       }
