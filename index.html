@@ -333,6 +333,11 @@
       <h2>Featured Primaries</h2>
       <div id="featured-rows">Loading...</div>
     </div>
+    <div class="panel" id="ca-gov">
+      <h2>CA Governor</h2>
+      <div id="ca-gov-rows">Loading...</div>
+      <a class="kalshi-link" href="https://kalshi.com/markets/kxgovca" target="_blank">View on Kalshi</a>
+    </div>
   </div>
 </div>
 <div id="status">Loading market data...</div>
@@ -541,6 +546,25 @@ async function loadControlData(retries = 3) {
         <span class="balance-price" style="color:${color}">${price}%</span>
       </a>`;
     }).join('');
+
+    // CA Governor top 5
+    const caGov = data.caGov || {};
+    const caGovEl = document.getElementById('ca-gov-rows');
+    const candidates = caGov.candidates || [];
+    if (candidates.length) {
+      const maxPrice = candidates[0].price;
+      caGovEl.innerHTML = candidates.map(c => {
+        const price = Math.round(c.price);
+        const barWidth = maxPrice > 0 ? Math.max(4, (c.price / maxPrice) * 100) : 0;
+        return `<div class="balance-row" style="flex-wrap:wrap;gap:4px">
+          <span class="balance-label" style="flex:1">${c.name}</span>
+          <span class="balance-price" style="color:#4ade80">${price}%</span>
+          <div style="width:100%;height:6px;background:#2a2a3a;border-radius:3px">
+            <div style="width:${barWidth}%;height:100%;background:#4ade80;border-radius:3px"></div>
+          </div>
+        </div>`;
+      }).join('');
+    }
   } catch (e) {
     console.error('Failed to load control data:', e);
   }

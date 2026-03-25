@@ -182,6 +182,25 @@ def fetch_control_data():
         time.sleep(0.3)
     results["featured"] = featured
 
+    # CA Governor - top 5 candidates
+    try:
+        url = f"{KALSHI_API}?series_ticker=KXGOVCA&limit=50"
+        req = urllib.request.Request(url, headers={"Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read())
+        candidates = []
+        for m in data.get("markets", []):
+            price = float(m.get("last_price_dollars") or "0") * 100
+            candidates.append({
+                "name": m.get("yes_sub_title") or m["ticker"],
+                "price": price,
+            })
+        candidates.sort(key=lambda c: -c["price"])
+        results["caGov"] = {"candidates": candidates[:5], "series": "kxgovca"}
+    except Exception as e:
+        print(f"  Failed CA Gov: {e}")
+        results["caGov"] = {"candidates": [], "series": "kxgovca"}
+
     results["_fetchedAt"] = time.time()
     with _control_cache_lock:
         _control_cache.update(results)
