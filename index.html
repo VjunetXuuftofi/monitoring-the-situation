@@ -330,7 +330,7 @@
       <a class="kalshi-link" href="https://kalshi.com/markets/kxbalancepowercombo" target="_blank">View on Kalshi</a>
     </div>
     <div class="panel" id="featured-races">
-      <h2>Featured Primaries</h2>
+      <h2>Featured Races</h2>
       <div id="featured-rows">Loading...</div>
     </div>
     <div class="panel" id="ca-gov">
@@ -534,17 +534,25 @@ async function loadControlData(retries = 3) {
       </div>`;
     }).join('');
 
-    // Featured primary races
+    // Featured races — primary odds and general combined odds
     const featured = data.featured || [];
     const featuredEl = document.getElementById('featured-rows');
+    const fmt = p => p !== null && p !== undefined ? Math.round(p) : '—';
+    const colorOf = p => p === null || p === undefined ? '#888' : p >= 70 ? '#4ade80' : p >= 40 ? '#fbbf24' : '#f87171';
     featuredEl.innerHTML = featured.map(f => {
-      const price = f.price !== null ? Math.round(f.price) : '—';
-      const color = f.price >= 70 ? '#4ade80' : f.price >= 40 ? '#fbbf24' : '#f87171';
-      const url = `https://kalshi.com/markets/${f.series}`;
-      return `<a class="balance-row featured-link" href="${url}" target="_blank" style="text-decoration:none;color:inherit">
-        <span class="balance-label">${f.label}</span>
-        <span class="balance-price" style="color:${color}">${price}%</span>
-      </a>`;
+      const pPrice = fmt(f.primaryPrice);
+      const cPrice = fmt(f.combinedPrice);
+      return `<div style="margin-bottom:10px">
+        <div style="font-size:13px;font-weight:600;color:#ccc;margin-bottom:4px">${f.label}</div>
+        <a class="balance-row featured-link" href="${f.primaryUrl}" target="_blank" style="text-decoration:none;color:inherit;padding-left:8px">
+          <span class="balance-label" style="font-size:12px">Primary odds</span>
+          <span class="balance-price" style="color:${colorOf(f.primaryPrice)}">${pPrice}%</span>
+        </a>
+        <a class="balance-row featured-link" href="${f.combinedUrl}" target="_blank" style="text-decoration:none;color:inherit;padding-left:8px">
+          <span class="balance-label" style="font-size:12px">General combined odds</span>
+          <span class="balance-price" style="color:${colorOf(f.combinedPrice)}">${cPrice}%</span>
+        </a>
+      </div>`;
     }).join('');
 
     // CA Governor top 5

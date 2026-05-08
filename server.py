@@ -141,45 +141,70 @@ def fetch_control_data():
         results[key] = {"markets": markets, "eventTicker": evt}
         time.sleep(0.5)
 
-    # Featured primary races - fetch specific candidate tickers
+    # Featured races - fetch primary odds and combined (primary + general) odds
+    # combined_ticker: direct person market (already combined)
+    # general_ticker: party market for the seat — combined = primary × general
     FEATURED_RACES = [
         {
             "key": "ca11_wiener",
             "label": "Scott Wiener, CA-11",
-            "ticker": "KXCA11PRIMARY-26-SWIE",
-            "series": "kxca11primary",
+            "primary_ticker": "KXCA11PRIMARY-26-SWIE",
+            "primary_url": "https://kalshi.com/markets/kxca11primary",
+            "combined_ticker": "KXCA11PERSON-26-SWIE",
+            "combined_url": "https://kalshi.com/markets/kxca11person/ca11-house-winner-person/kxca11person-26",
         },
         {
             "key": "co08_rutinel",
             "label": "Manny Rutinel, CO-08",
-            "ticker": "KXCO8D-26-MRUT",
-            "series": "kxco8d",
+            "primary_ticker": "KXCO8D-26-MRUT",
+            "primary_url": "https://kalshi.com/markets/kxco8d",
+            "general_ticker": "HOUSECO8-26-D",
+            "combined_url": "https://kalshi.com/markets/houseco8/house-co-8/houseco8-26",
         },
         {
             "key": "ny12_bores",
             "label": "Alex Bores, NY-12",
-            "ticker": "KXNY12D-26-ABOR",
-            "series": "kxny12d",
+            "primary_ticker": "KXNY12D-26-ABOR",
+            "primary_url": "https://kalshi.com/markets/kxny12d",
+            "general_ticker": "KXHOUSERACE-NY12-26-D",
+            "combined_url": "https://kalshi.com/markets/kxhouserace/house-race-winner/kxhouserace-ny12-26",
         },
     ]
-    featured = []
-    for race in FEATURED_RACES:
+
+    def fetch_ticker_price(ticker):
         try:
-            url = f"{KALSHI_API}?tickers={race['ticker']}&limit=1"
+            url = f"{KALSHI_API}?tickers={ticker}&limit=1"
             req = urllib.request.Request(url, headers={"Accept": "application/json"})
             with urllib.request.urlopen(req, timeout=10) as resp:
                 data = json.loads(resp.read())
             markets = data.get("markets", [])
-            price = float(markets[0].get("last_price_dollars") or "0") * 100 if markets else None
-            featured.append({
-                "label": race["label"],
-                "price": price,
-                "series": race["series"],
-            })
+            if not markets:
+                return None
+            return float(markets[0].get("last_price_dollars") or "0") * 100
         except Exception as e:
-            print(f"  Failed featured {race['key']}: {e}")
-            featured.append({"label": race["label"], "price": None, "series": race["series"]})
+            print(f"  Failed ticker {ticker}: {e}")
+            return None
+
+    featured = []
+    for race in FEATURED_RACES:
+        primary_price = fetch_ticker_price(race["primary_ticker"])
         time.sleep(0.3)
+        if "combined_ticker" in race:
+            combined_price = fetch_ticker_price(race["combined_ticker"])
+        else:
+            general_price = fetch_ticker_price(race["general_ticker"])
+            if primary_price is not None and general_price is not None:
+                combined_price = (primary_price / 100) * general_price
+            else:
+                combined_price = None
+        time.sleep(0.3)
+        featured.append({
+            "label": race["label"],
+            "primaryPrice": primary_price,
+            "primaryUrl": race["primary_url"],
+            "combinedPrice": combined_price,
+            "combinedUrl": race["combined_url"],
+        })
     results["featured"] = featured
 
     # CA Governor - top 5 candidates
